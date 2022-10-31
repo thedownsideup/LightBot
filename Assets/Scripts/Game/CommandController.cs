@@ -1,10 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class CommandController : MonoBehaviour
 {
-    [SerializeField] Command command;
+    [FormerlySerializedAs("command")] public CommandData commandData;
 
     public void OnClick()
     {
@@ -13,6 +14,7 @@ public class CommandController : MonoBehaviour
 
     private void Remove()
     {
-        Command_Manager.Instance.RemoveCommand(command);
+        Command_Manager.Instance.RemoveCommand(commandData);
+        Destroy(gameObject);
     }
 }

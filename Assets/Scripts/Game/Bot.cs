@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 using UnityEngine;
 using static UnityEngine.Mathf;
@@ -7,13 +8,7 @@ using Vector3 = UnityEngine.Vector3;
 
 public class Bot : MonoBehaviour
 {
-	private float duration = 0.5f;
-	private float step = -1.7f;
-	private float jumpHeight = 1f;
-	private Vector3 targetPosition;
-	private float endRotation;
-
-	enum Moves
+	private enum Moves
 	{
 		Walk,
 		Light,
@@ -21,6 +16,23 @@ public class Bot : MonoBehaviour
 		TurnRight,
 		Jump
 	}
+
+	private enum ObstacleType
+	{
+		Block,
+		Wall
+	}
+	
+	private const float RAYCAST_MAX_DISTANCE = 1.7f;
+	private const float RAYCAST_ORIGIN_BLOCK_Y = -0.6f;
+	private const float RAYCAST_ORIGIN_WALL_Y = 1.7f;
+	
+	private float duration = 0.5f;
+	private float stepSize = -1.7f;
+	private float jumpHeight = 1f;
+	private float endRotation;
+	private Vector3 targetPosition;
+
 
 	void Awake()
 	{
@@ -30,44 +42,44 @@ public class Bot : MonoBehaviour
 	}
 
 
-	public IEnumerator Move (List<Command> commands)
+	public IEnumerator Move (CommandData command)
 	{
-		foreach (Command command in commands)
+		Vector3 currentPosition = transform.position;
+		switch (command.Value)
 		{
-			Vector3 currentPosition = transform.position;
-			switch (command.value)
-			{
-				case (int)Moves.Walk:
-					yield return StartCoroutine(Walk(transform.right));
-					break;
-				case (int)Moves.Light:
-					Light();
-					break;
-				case (int)Moves.TurnLeft:
-					yield return StartCoroutine(Turn(-90f));
-					break;
-				case (int)Moves.TurnRight:
-					yield return StartCoroutine(Turn(90f));
-					break;
-				case (int)Moves.Jump:
-					yield return StartCoroutine(Jump());
-					break;
-			}
-			yield return new WaitForSeconds(0.2f);
+			case (int)Moves.Walk:
+				yield return StartCoroutine(Walk(transform.right));
+				break;
+			case (int)Moves.Light:
+				Light();
+				break;
+			case (int)Moves.TurnLeft:
+				yield return StartCoroutine(Turn(-90f));
+				break;
+			case (int)Moves.TurnRight:
+				yield return StartCoroutine(Turn(90f));
+				break;
+			case (int)Moves.Jump:
+				yield return StartCoroutine(Jump());
+				break;
 		}
+		yield return new WaitForSeconds(0.2f); //	TODO: Check without this line
 	}
 	
 	private IEnumerator Walk(Vector3 direction)
 	{
-		Vector3 startPosition  = transform.position;
-		targetPosition = targetPosition + (direction * step);
-		float elapsedTime = 0;
-         
-		while (elapsedTime < duration)
+		if (!CheckForObstacle(ObstacleType.Block) && !CheckForObstacle(ObstacleType.Wall))
 		{
-			transform.position = Vector3.Lerp(startPosition, targetPosition, (elapsedTime / duration));
-			elapsedTime += Time.deltaTime;
-			yield return null;
+			Vector3 startPosition  = transform.position;
+			targetPosition = targetPosition + (direction * stepSize);
+			float elapsedTime = 0;
+         
+			while (elapsedTime < duration)
+			{
+				transform.position = Vector3.Lerp(startPosition, targetPosition, (elapsedTime / duration));
+				elapsedTime += Time.deltaTime;
+				yield return null;
+			}
 		}
 	}
 
@@ -96,22 +108,31 @@ public class Bot : MonoBehaviour
 		if (collider.gameObject.CompareTag("Block"))
 		{
 			Block block = collider.transform.GetComponent<Block>();
-			block.Light();
+			block.StartLightSequence();
 		}
 	}
 
 	private IEnumerator Jump()
 	{
-		if (ThereIsObstacle())
+		if (CheckForObstacle(ObstacleType.Wall))
 		{
 			yield return StartCoroutine(JumpDirection(transform.up));
-			yield return StartCoroutine(Walk(transform.right));
+			yield return StartCoroutine(JumpDirection(-transform.up));
 		}
 		else
 		{
-			yield return StartCoroutine(Walk(transform.right));
-			yield return StartCoroutine(JumpDirection(-transform.up));
-		}
+			if (CheckForObstacle(ObstacleType.Block))
+			{
+				yield return StartCoroutine(JumpDirection(transform.up));
+				yield return StartCoroutine(Walk(transform.right));
+			}
+			else
+			{
+				yield return StartCoroutine(Walk(transform.right));
+				yield return StartCoroutine(JumpDirection(-transform.up));
+			}
+		}	
+		
 	}
 
 	private IEnumerator JumpDirection(Vector3 direction)
@@ -128,19 +149,27 @@ public class Bot : MonoBehaviour
 		}
 	}
 
-	private bool ThereIsObstacle()
+	private bool CheckForObstacle(ObstacleType obstacleType)
 	{
-		Vector3 raycastOriginPoint = transform.position + new Vector3(0, -0.6f, 0);
-		float raycastMaxDistance = 1.7f;
-		
+		Vector3 raycastOriginPoint = transform.position;
 		RaycastHit hit;
+
+		switch (obstacleType)
+		{
+			case ObstacleType.Block:
+				raycastOriginPoint += new Vector3(0, RAYCAST_ORIGIN_BLOCK_Y, 0);
+				break;
+			case ObstacleType.Wall:
+				raycastOriginPoint += new Vector3(0, RAYCAST_ORIGIN_WALL_Y, 0);
+				break;
+		}
+		
 		if (Physics.Raycast(origin: raycastOriginPoint, direction: -transform.right, out hit, 
-			    maxDistance: raycastMaxDistance, layerMask: Physics.AllLayers,
+			    maxDistance: RAYCAST_MAX_DISTANCE, layerMask: Physics.AllLayers,
 			    queryTriggerInteraction: QueryTriggerInteraction.UseGlobal))
 		{
 			return true;
 		}
-
 		else
 		{
 			return false;

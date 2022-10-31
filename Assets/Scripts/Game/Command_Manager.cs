@@ -5,102 +5,115 @@ using UnityEngine.UI;
 
 public class Command_Manager : MonoBehaviour
 {
-    public static Command_Manager Instance;
-    
-    private List<Command> mainCommands = new List<Command>();
-    private List<Command> functionCommands = new List<Command>();
-    
-    private Bot bot;
-    
-    [SerializeField] private GameObject commandContainer;
-    [SerializeField] private Transform mainContainer;
-    [SerializeField] private Transform functionContainer;
-    
-    private const int FUNCTION_COMMAND = 5;
-    private const int MAX_COMMANDS_MAIN = 12;
-    private const int MAX_COMMANDS_FUNCTION = 8;
-
-    private bool isMain = true;
-    private bool isFunction = false;
-
-    enum Container
+    private enum Container
     {
         Main,
         Function
     }
     
+    public static Command_Manager Instance;
+    
+    private const int FUNCTION_COMMAND = 5;
+    private const int MAX_COMMANDS_MAIN = 12;
+    private const int MAX_COMMANDS_FUNCTION = 8;
+    
+    [SerializeField] private GameObject commandContainer;
+    [SerializeField] private Transform mainContainer;
+    [SerializeField] private Transform functionContainer;
+    
+    private List<CommandData> mainCommands = new List<CommandData>();
+    private List<CommandData> functionCommands = new List<CommandData>();
+    
+    private Bot bot;
+
+    private bool isMain = true;
+    private bool isFunction = false;
+
+    
     private void Start()
     {
         Instance = this;
     }
-    public void AddCommand(Command command)
+    public void AddCommand(CommandData commandData)
     {
         if (isMain && mainCommands.Count <= MAX_COMMANDS_MAIN)
         {
-            mainCommands.Add(command);
-            ShowCommandItem(command, mainContainer);
+            mainCommands.Add(commandData);
+            ShowCommandItem(commandData, mainContainer);
         }
-
-        if (isFunction && functionCommands.Count <= MAX_COMMANDS_FUNCTION)
+        else if (isFunction && functionCommands.Count <= MAX_COMMANDS_FUNCTION)
         {
-            functionCommands.Add(command);
-            ShowCommandItem(command, functionContainer);
+            functionCommands.Add(commandData);
+            ShowCommandItem(commandData, functionContainer);
         }
-        
     }
 
-    public void RemoveCommand(Command command)
+    public void RemoveCommand(CommandData commandData)
     {
-        mainCommands.Remove(command);
-        //TODO : Don't show 
+        if (mainCommands.Contains(commandData))
+        {
+            mainCommands.Remove(commandData);
+        }
+        else if (functionCommands.Contains(commandData))
+        {
+            functionCommands.Remove(commandData);
+        }
     }
 
-    private void ShowCommandItem(Command command, Transform container)
+    private void ShowCommandItem(CommandData commandData, Transform container)
     {
         GameObject commandPrefab = Instantiate(commandContainer, container);
-        commandPrefab.GetComponent<Image>().sprite = command.icon;
+        commandPrefab.GetComponent<CommandController>().commandData = commandData;
+        commandPrefab.GetComponent<Image>().sprite = commandData.Icon;
     }
 
     public void OnRun()
     {
         GetBot();
-        BreakFunctions();
-        CommandBot();
+        StartCoroutine(BreakFunctions());
     }
 
-    void BreakFunctions()
+    IEnumerator BreakFunctions()
     {
         for (int i = 0; i < mainCommands.Count; i++)
         {
-            if (mainCommands[i].value == FUNCTION_COMMAND)
+            if (mainCommands[i].Value == FUNCTION_COMMAND)
             {
                 for (int j = 0; j < functionCommands.Count; j++)
                 {
                     mainCommands.Insert(i + j, functionCommands[j]);
                 }
                 mainCommands.Remove(mainCommands[i + functionCommands.Count]);
+                yield return StartCoroutine(CommandBot(mainCommands[i]));
+                yield return null;
+            }
+            else
+            {
+                yield return StartCoroutine(CommandBot(mainCommands[i]));
             }
         }
     }
     
-
-    private void CommandBot()
+    private IEnumerator CommandBot(CommandData command)
     {
-        StartCoroutine(bot.Move(mainCommands));
+        yield return StartCoroutine(bot.Move(command));
     }
 
     private void GetBot()
     {
         bot = GameObject.Find("Bot").GetComponent<Bot>();
-
-        if (bot == null)
-            Debug.LogError("Bot Is Empty");
     }
 
     public void ClearCommandList()
     {
         mainCommands.Clear();
-        foreach (Transform child in mainContainer) {
+        functionCommands.Clear();
+        foreach (Transform child in mainContainer) 
+        {
+            GameObject.Destroy(child.gameObject);
+        }
+        foreach (Transform child in functionContainer) 
+        {
             GameObject.Destroy(child.gameObject);
         }
     }

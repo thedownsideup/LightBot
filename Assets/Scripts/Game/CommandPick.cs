@@ -1,13 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 public class CommandPick : MonoBehaviour
 {
-    [SerializeField] private Command command;
+    [FormerlySerializedAs("command")] [SerializeField] private CommandConfig commandConfig;
     public void OnClick()
     {
-        Command_Manager.Instance.AddCommand(command);
+        CommandData commandData = new CommandData(commandConfig);
+        Command_Manager.Instance.AddCommand(commandData);
     }
 }

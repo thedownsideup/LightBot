@@ -1,20 +1,14 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Threading;
 using UnityEngine;
 
 public class Block : MonoBehaviour
 {
     [SerializeField] private Transform glowingBlockPrefab;
-    private Level_Manager levelManager;
-    public void Light()
+
+    public void StartLightSequence()
     {
-        GetLevelManager();
-        Transform glowingBlock = Instantiate(glowingBlockPrefab, transform.parent.transform);
-        glowingBlock.position = transform.position;
-        
+        Level_Manager levelManager = GetLevelManager();
         levelManager.CountLitBlocks();
-        
+        Light();
         SelfDestruct();
     }
 
@@ -23,12 +17,15 @@ public class Block : MonoBehaviour
         Destroy(this.gameObject);
     }
 
-    private void GetLevelManager()
+    private void Light()
     {
-        levelManager = GameObject.Find("Level_Manager").GetComponent<Level_Manager>();
-        if (levelManager == null)
-        {
-            Debug.LogError("Level Manager Is Empty");
-        }
+        Transform glowingBlock = Instantiate(glowingBlockPrefab, transform.parent.transform);
+        glowingBlock.position = transform.position;
+    }
+
+    private Level_Manager GetLevelManager()
+    {
+        Level_Manager levelManager = GameObject.Find("Level_Manager").GetComponent<Level_Manager>();
+        return levelManager;
     }
 }

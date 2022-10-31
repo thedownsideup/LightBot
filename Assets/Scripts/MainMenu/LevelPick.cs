@@ -5,10 +5,16 @@ using UnityEngine.SceneManagement;
 
 public class LevelPick : MonoBehaviour
 {
+    public static LevelPick Instance;
     private int levelNumber;
+    private const int GAME_SCENE_INDEX = 1;
     void Start()
     {
-        DontDestroyOnLoad(this);
+        if (Instance != null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(this);
+        }
     }
 
     public void LoadScene(int chosenLevelNumber)
@@ -18,9 +24,12 @@ public class LevelPick : MonoBehaviour
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
     
-    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        LoadLevel();
+        if (scene.buildIndex == GAME_SCENE_INDEX)
+        {
+            LoadLevel();
+        }
     }
 
     private void LoadLevel()

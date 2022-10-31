@@ -5,29 +5,30 @@ using UnityEngine.UI;
 
 public class Command_Manager : MonoBehaviour
 {
+    private enum Container
+    {
+        Main,
+        Function
+    }
+    
     public static Command_Manager Instance;
     
-    private List<CommandData> mainCommands = new List<CommandData>();
-    private List<CommandData> functionCommands = new List<CommandData>();
-    
-    private Bot bot;
+    private const int FUNCTION_COMMAND = 5;
+    private const int MAX_COMMANDS_MAIN = 12;
+    private const int MAX_COMMANDS_FUNCTION = 8;
     
     [SerializeField] private GameObject commandContainer;
     [SerializeField] private Transform mainContainer;
     [SerializeField] private Transform functionContainer;
     
-    private const int FUNCTION_COMMAND = 5;
-    private const int MAX_COMMANDS_MAIN = 12;
-    private const int MAX_COMMANDS_FUNCTION = 8;
+    private List<CommandData> mainCommands = new List<CommandData>();
+    private List<CommandData> functionCommands = new List<CommandData>();
+    
+    private Bot bot;
 
     private bool isMain = true;
     private bool isFunction = false;
 
-    enum Container
-    {
-        Main,
-        Function
-    }
     
     private void Start()
     {
@@ -40,13 +41,11 @@ public class Command_Manager : MonoBehaviour
             mainCommands.Add(commandData);
             ShowCommandItem(commandData, mainContainer);
         }
-
         else if (isFunction && functionCommands.Count <= MAX_COMMANDS_FUNCTION)
         {
             functionCommands.Add(commandData);
             ShowCommandItem(commandData, functionContainer);
         }
-        
     }
 
     public void RemoveCommand(CommandData commandData)
@@ -55,7 +54,6 @@ public class Command_Manager : MonoBehaviour
         {
             mainCommands.Remove(commandData);
         }
-
         else if (functionCommands.Contains(commandData))
         {
             functionCommands.Remove(commandData);
@@ -104,19 +102,18 @@ public class Command_Manager : MonoBehaviour
     private void GetBot()
     {
         bot = GameObject.Find("Bot").GetComponent<Bot>();
-
-        if (bot == null)
-            Debug.LogError("Bot Is Empty");
     }
 
     public void ClearCommandList()
     {
         mainCommands.Clear();
         functionCommands.Clear();
-        foreach (Transform child in mainContainer) {
+        foreach (Transform child in mainContainer) 
+        {
             GameObject.Destroy(child.gameObject);
         }
-        foreach (Transform child in functionContainer) {
+        foreach (Transform child in functionContainer) 
+        {
             GameObject.Destroy(child.gameObject);
         }
     }

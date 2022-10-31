@@ -5,7 +5,6 @@ using UnityEngine;
 public class CommandButtonHolder : MonoBehaviour
 {
     [SerializeField] private List<GameObject> buttonContainers = new List<GameObject>();
-    [SerializeField] private GameObject functionContainer;
 
     public void SetButtons(int numberOfButtons)
     {

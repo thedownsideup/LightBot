@@ -6,7 +6,6 @@ using UnityEngine.SceneManagement;
 
 public class UI_Manager : MonoBehaviour
 {
-    [SerializeField] private Button backButton;
     [SerializeField] private Text levelOverText;
     [SerializeField] private Button nextLevelButton;
     public void LevelOver()

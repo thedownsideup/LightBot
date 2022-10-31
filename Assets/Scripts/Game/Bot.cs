@@ -8,17 +8,7 @@ using Vector3 = UnityEngine.Vector3;
 
 public class Bot : MonoBehaviour
 {
-	private float duration = 0.5f;
-	private float step = -1.7f;
-	private float jumpHeight = 1f;
-	private Vector3 targetPosition;
-	private float endRotation;
-
-	private const float RAYCAST_MAX_DISTANCE = 1.7f;
-	private const float RAYCAST_ORIGIN_BLOCK_Y = -0.6f;
-	private const float RAYCAST_ORIGIN_WALL_Y = 1.7f;
-
-	enum Moves
+	private enum Moves
 	{
 		Walk,
 		Light,
@@ -27,11 +17,22 @@ public class Bot : MonoBehaviour
 		Jump
 	}
 
-	enum Obstacles
+	private enum ObstacleType
 	{
 		Block,
 		Wall
 	}
+	
+	private const float RAYCAST_MAX_DISTANCE = 1.7f;
+	private const float RAYCAST_ORIGIN_BLOCK_Y = -0.6f;
+	private const float RAYCAST_ORIGIN_WALL_Y = 1.7f;
+	
+	private float duration = 0.5f;
+	private float stepSize = -1.7f;
+	private float jumpHeight = 1f;
+	private float endRotation;
+	private Vector3 targetPosition;
+
 
 	void Awake()
 	{
@@ -62,15 +63,15 @@ public class Bot : MonoBehaviour
 				yield return StartCoroutine(Jump());
 				break;
 		}
-		yield return new WaitForSeconds(0.2f);
+		yield return new WaitForSeconds(0.2f); //	TODO: Check without this line
 	}
 	
 	private IEnumerator Walk(Vector3 direction)
 	{
-		if (!CheckForObstacle((int) Obstacles.Block) && !CheckForObstacle((int) Obstacles.Wall))
+		if (!CheckForObstacle(ObstacleType.Block) && !CheckForObstacle(ObstacleType.Wall))
 		{
 			Vector3 startPosition  = transform.position;
-			targetPosition = targetPosition + (direction * step);
+			targetPosition = targetPosition + (direction * stepSize);
 			float elapsedTime = 0;
          
 			while (elapsedTime < duration)
@@ -107,20 +108,20 @@ public class Bot : MonoBehaviour
 		if (collider.gameObject.CompareTag("Block"))
 		{
 			Block block = collider.transform.GetComponent<Block>();
-			block.Light();
+			block.StartLightSequence();
 		}
 	}
 
 	private IEnumerator Jump()
 	{
-		if (CheckForObstacle((int) Obstacles.Wall))
+		if (CheckForObstacle(ObstacleType.Wall))
 		{
 			yield return StartCoroutine(JumpDirection(transform.up));
 			yield return StartCoroutine(JumpDirection(-transform.up));
 		}
 		else
 		{
-			if (CheckForObstacle((int)Obstacles.Block))
+			if (CheckForObstacle(ObstacleType.Block))
 			{
 				yield return StartCoroutine(JumpDirection(transform.up));
 				yield return StartCoroutine(Walk(transform.right));
@@ -148,28 +149,27 @@ public class Bot : MonoBehaviour
 		}
 	}
 
-	private bool CheckForObstacle(int obstacleType)
+	private bool CheckForObstacle(ObstacleType obstacleType)
 	{
 		Vector3 raycastOriginPoint = transform.position;
+		RaycastHit hit;
 
 		switch (obstacleType)
 		{
-			case (int)Obstacles.Block:
+			case ObstacleType.Block:
 				raycastOriginPoint += new Vector3(0, RAYCAST_ORIGIN_BLOCK_Y, 0);
 				break;
-			case (int)Obstacles.Wall:
+			case ObstacleType.Wall:
 				raycastOriginPoint += new Vector3(0, RAYCAST_ORIGIN_WALL_Y, 0);
 				break;
 		}
 		
-		RaycastHit hit;
 		if (Physics.Raycast(origin: raycastOriginPoint, direction: -transform.right, out hit, 
 			    maxDistance: RAYCAST_MAX_DISTANCE, layerMask: Physics.AllLayers,
 			    queryTriggerInteraction: QueryTriggerInteraction.UseGlobal))
 		{
 			return true;
 		}
-
 		else
 		{
 			return false;
